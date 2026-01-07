@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: barber-bot
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: TELEGRAM_TOKEN
+        sync: false
+        description: "Token del bot de Telegram obtenido de @BotFather"
+      - key: GEMINI_API_KEY
+        sync: false
+        description: "API Key de Google Gemini obtenida de AI Studio"
+      - key: GOOGLE_CALENDAR_ID
+        value: primary
+        description: "ID del calendario de Google (generalmente 'primary')"
+      - key: GOOGLE_SPREADSHEET_ID
+        sync: false
+        description: "ID de la hoja de cálculo de Google (opcional)"
+      - key: GENAI_MODEL
+        value: gemini-1.5-flash
+        description: "Modelo de Gemini a usar"
+      - key: OAUTH_REDIRECT_URI
+        sync: false
+        description: "URL de callback OAuth (se configurará automáticamente con la URL de Render)"
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+        description: "JSON completo del archivo credentials.json como string (una sola línea)"
+      - key: DB_DIR
+        sync: false
+        description: "Directorio para la base de datos SQLite (opcional, usa '.' por defecto)"
+    healthCheckPath: /
+    # Para usar disco persistente, descomenta las siguientes líneas:
+    # disk:
+    #   name: barber-bot-data
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1
