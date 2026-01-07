@@ -318,6 +318,29 @@ async def show_whoami(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("Este bot pertenece a otro usuario.")
 
+async def reset_bot_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Comando para resetear el bot (Borrar dueño).
+    """
+    user_id = str(update.effective_user.id)
+    admin_id = db.get_admin_id()
+    
+    # Solo el admin actual puede borrarlo (o si nadie es admin, pero eso es redundante)
+    if admin_id and user_id != admin_id:
+        await update.message.reply_text("⛔ Solo el dueño actual puede resetear el bot.")
+        return
+
+    success = db.reset_configuration()
+    if success:
+        await update.message.reply_text(
+            "🗑️ *Bot receteado correctamente.*\n\n"
+            "La configuración del dueño ha sido borrada.\n"
+            "Ahora puedes usar /setup para registrar un nuevo dueño.",
+            parse_mode='Markdown'
+        )
+    else:
+        await update.message.reply_text("❌ Error al intentar resetear el bot.")
+
 async def connect_calendar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Comando SOLO para el ADMIN (Barbero). Genera el link para conectar su Google Calendar.
@@ -471,6 +494,7 @@ def create_application():
     connect_handler = CommandHandler('connect', connect_calendar)
     info_handler = CommandHandler('info', show_owner_info)
     whoami_handler = CommandHandler('whoami', show_whoami)
+    reset_handler = CommandHandler('reset', reset_bot_command)
     cancel_handler = CommandHandler('cancel', cancel_setup)
     message_handler = MessageHandler(filters.TEXT | filters.VOICE | filters.PHOTO | filters.AUDIO, handle_message)
     
@@ -480,6 +504,7 @@ def create_application():
     application.add_handler(connect_handler)
     application.add_handler(info_handler)
     application.add_handler(whoami_handler)
+    application.add_handler(reset_handler)
     application.add_handler(cancel_handler)
     application.add_handler(message_handler)
 

@@ -166,6 +166,22 @@ class Database:
             logger.error(f"Error actualizando información del dueño: {e}")
             return False
 
+    def reset_configuration(self):
+        """
+        Borra la configuración del admin y la info del bot.
+        Útil para pruebas o reiniciar el bot.
+        """
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM config WHERE key = 'admin_id'")
+                cursor.execute("DELETE FROM bot_info")
+                conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error reseteando configuración: {e}")
+            return False
+
     # --- User Credentials Methods ---
     def save_user_credentials(self, telegram_id, credentials_dict, username=None, first_name=None):
         """
