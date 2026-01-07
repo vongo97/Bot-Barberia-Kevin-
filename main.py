@@ -50,4 +50,15 @@ if __name__ == "__main__":
     # El bot se inicia en el evento 'startup'
     # Render proporciona PORT como variable de entorno
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+    logger.info(f"Iniciando servidor web en puerto {port}...")
+    logger.info(f"Servidor escuchando en http://0.0.0.0:{port}")
+    # Usar uvicorn.run con el objeto app directamente
+    # Esto asegura que el servidor escuche correctamente en el puerto
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=port,
+        log_level="info",
+        access_log=True,
+        loop="asyncio"
+    )
