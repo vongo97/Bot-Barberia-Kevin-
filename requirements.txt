@@ -7,6 +7,7 @@ python-dotenv
 pandas
 fastapi
 uvicorn
+gunicorn
 cryptography
 python-multipart
 apscheduler

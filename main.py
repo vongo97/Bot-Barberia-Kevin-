@@ -45,15 +45,13 @@ async def shutdown_event():
         except Exception as e:
             logger.error(f"Error deteniendo el bot: {e}")
 
+# Nota: En producción (Render), gunicorn importa este módulo directamente
+# y ejecuta la app. Los eventos @app.on_event("startup") se ejecutan automáticamente.
+# Este bloque solo se usa para desarrollo local.
 if __name__ == "__main__":
-    # Inicia el servidor web (Auth + Healthchecks)
-    # El bot se inicia en el evento 'startup'
-    # Render proporciona PORT como variable de entorno
+    # Desarrollo local: usar uvicorn directamente
     port = int(os.getenv("PORT", 8000))
-    logger.info(f"Iniciando servidor web en puerto {port}...")
-    logger.info(f"Servidor escuchando en http://0.0.0.0:{port}")
-    # Usar uvicorn.run con el objeto app directamente
-    # Esto asegura que el servidor escuche correctamente en el puerto
+    logger.info(f"Iniciando servidor web en puerto {port} (modo desarrollo)...")
     uvicorn.run(
         app,
         host="0.0.0.0",
