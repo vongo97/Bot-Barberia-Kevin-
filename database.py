@@ -41,6 +41,28 @@ class Database:
                         value TEXT
                     )
                 ''')
+                # Tabla de información del bot (dueño, barbería, etc.)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS bot_info (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        bot_name TEXT,
+                        owner_telegram_id TEXT,
+                        owner_name TEXT,
+                        owner_username TEXT,
+                        barberia_name TEXT,
+                        owner_phone TEXT,
+                        owner_address TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (owner_telegram_id) REFERENCES users(telegram_id)
+                    )
+                ''')
+                # Agregar columna address si no existe (para bases de datos existentes)
+                try:
+                    cursor.execute('ALTER TABLE bot_info ADD COLUMN owner_address TEXT')
+                except sqlite3.OperationalError:
+                    # La columna ya existe, no hacer nada
+                    pass
                 conn.commit()
         except Exception as e:
             logger.error(f"Error inicializando DB: {e}")
@@ -58,7 +80,7 @@ class Database:
             logger.error(f"Error obteniendo admin_id: {e}")
             return None
 
-    def set_admin_id(self, telegram_id, username=None, first_name=None):
+    def set_admin_id(self, telegram_id, username=None, first_name=None, barberia_name=None):
         """Registra al admin. Solo funciona si no hay uno ya."""
         current_admin = self.get_admin_id()
         if current_admin:
@@ -73,10 +95,75 @@ class Database:
                     INSERT OR REPLACE INTO users (telegram_id, username, first_name, updated_at)
                     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
                 ''', (str(telegram_id), username, first_name))
+                # Guardar información del bot y dueño
+                bot_name = os.getenv('BOT_NAME', 'Bot Barbería')
+                cursor.execute('''
+                    INSERT INTO bot_info (bot_name, owner_telegram_id, owner_name, owner_username, barberia_name, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ''', (bot_name, str(telegram_id), first_name, username, barberia_name))
                 conn.commit()
             return True
         except Exception as e:
             logger.error(f"Error guardando admin_id: {e}")
+            return False
+    
+    def get_owner_info(self):
+        """Retorna información completa del dueño del bot."""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT owner_telegram_id, owner_name, owner_username, barberia_name, owner_phone, owner_address, created_at
+                    FROM bot_info
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                ''')
+                row = cursor.fetchone()
+                if row:
+                    return {
+                        'telegram_id': row[0],
+                        'name': row[1],
+                        'username': row[2],
+                        'barberia_name': row[3],
+                        'phone': row[4],
+                        'address': row[5],
+                        'created_at': row[6]
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"Error obteniendo información del dueño: {e}")
+            return None
+    
+    def update_owner_info(self, barberia_name=None, owner_phone=None, owner_address=None):
+        """Actualiza información del dueño."""
+        admin_id = self.get_admin_id()
+        if not admin_id:
+            return False
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                updates = []
+                values = []
+                if barberia_name:
+                    updates.append('barberia_name = ?')
+                    values.append(barberia_name)
+                if owner_phone:
+                    updates.append('owner_phone = ?')
+                    values.append(owner_phone)
+                if owner_address is not None:  # Permite None explícitamente
+                    updates.append('owner_address = ?')
+                    values.append(owner_address)
+                if updates:
+                    values.append(str(admin_id))
+                    cursor.execute(f'''
+                        UPDATE bot_info 
+                        SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP
+                        WHERE owner_telegram_id = ?
+                    ''', values)
+                    conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error actualizando información del dueño: {e}")
             return False
 
     # --- User Credentials Methods ---

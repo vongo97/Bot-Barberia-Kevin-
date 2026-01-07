@@ -2,17 +2,20 @@ import os
 import uvicorn
 import asyncio
 import logging
-from auth_server import app
+from auth_server import app as fastapi_app
 from bot import create_application
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Exportar app para gunicorn (necesario para: gunicorn main:app)
+app = fastapi_app
+
 # Crear la aplicación del bot
 bot_app = create_application()
 
-@app.on_event("startup")
+@fastapi_app.on_event("startup")
 async def startup_event():
     """
     Inicia el bot de Telegram cuando arranca el servidor web.
@@ -30,7 +33,7 @@ async def startup_event():
         except Exception as e:
             logger.error(f"Error iniciando el bot: {e}")
 
-@app.on_event("shutdown")
+@fastapi_app.on_event("shutdown")
 async def shutdown_event():
     """
     Detiene el bot correctamente al apagar el servidor.
@@ -53,7 +56,7 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     logger.info(f"Iniciando servidor web en puerto {port} (modo desarrollo)...")
     uvicorn.run(
-        app,
+        fastapi_app,
         host="0.0.0.0",
         port=port,
         log_level="info",
