@@ -84,12 +84,15 @@ async def startup_event():
             await bot_app.initialize()
             await bot_app.start()
             # start_polling es asíncrono y no bloqueante en versions recientes de PTB si se usa así
-            # Sin embargo, ptb maneja su propio loop si se usa run_polling.
-            # Aquí lo integramos al loop de uvicorn/fastapi manually.
             await bot_app.updater.start_polling(drop_pending_updates=True)
-            logger.info("Bot de Telegram iniciado y escuchando (Polling).")
+            logger.info("✅ Bot de Telegram iniciado y escuchando (Polling).")
         except Exception as e:
-            logger.error(f"Error iniciando el bot: {e}")
+            logger.error(f"❌ ERROR CRÍTICO INICIANDO EL BOT: {e}")
+            logger.error("El servidor web seguirá corriendo, pero el Bot no responderá hasta arreglar el conflicto.")
+
+    logger.info("==================================================")
+    logger.info("       🟢 SERVIDOR WEB LISTO Y ESCUCHANDO 🟢       ")
+    logger.info("==================================================")
 
 @app.on_event("shutdown")
 async def shutdown_event():
