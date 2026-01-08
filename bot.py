@@ -85,6 +85,9 @@ async def setup_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⛔ Este bot ya tiene un dueño configurado.")
         return ConversationHandler.END
 
+    # Limpiar datos previos para evitar errores de autocompletado de intentos fallidos
+    context.user_data.clear()
+    
     # Guardar información del usuario en el contexto para usarla después
     context.user_data['setup_user_id'] = user_id
     context.user_data['setup_username'] = username
@@ -122,19 +125,17 @@ async def receive_barberia_name(update: Update, context: ContextTypes.DEFAULT_TY
         )
         return WAITING_BARBERIA
     
-    # Guardar nombre de barbería
+    # Guardar en contexto temporal
     context.user_data['setup_barberia_name'] = barberia_name
     
-    # Preguntar por teléfono (opcional)
     await update.message.reply_text(
-        f"✅ Nombre guardado: *{barberia_name}*\n\n"
+        f"✅ *Nombre guardado:* {barberia_name}\n\n"
         "📝 *Paso 2 de 3*\n"
-        "¿Cuál es tu número de teléfono? (Opcional)\n\n"
-        "💡 Puedes escribir tu teléfono o escribir 'omitir' para saltar este paso.\n"
-        "Ejemplo: +57 300 123 4567 o 3001234567",
+        "¿Cuál es tu número de teléfono de contacto?\n\n"
+        "💡 Puedes escribir tu teléfono (ej: +57 300 123 4567)\n"
+        "o escribir *'omitir'* si no quieres registrar uno.",
         parse_mode='Markdown'
     )
-    
     return WAITING_PHONE
 
 async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -157,11 +158,11 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Preguntar por dirección (opcional)
     await update.message.reply_text(
-        "✅ Teléfono guardado.\n\n" if context.user_data.get('setup_phone') else "✅ Paso omitido.\n\n"
+        "✅ *Teléfono registrado!*\n\n" if context.user_data.get('setup_phone') else "✅ *Paso omitido.*\n\n"
         "📝 *Paso 3 de 3*\n"
-        "¿Cuál es la dirección de tu barbería? (Opcional)\n\n"
-        "💡 Puedes escribir la dirección completa o 'omitir' para saltar este paso.\n"
-        "Ejemplo: 'Calle 123 #45-67, Bogotá'",
+        "¿Cuál es la dirección física de tu barbería?\n\n"
+        "💡 Escribe la dirección exacta (ej: 'Calle 10 #20-30, Ciudad')\n"
+        "o escribe *'omitir'* para finalizar sin dirección.",
         parse_mode='Markdown'
     )
     
@@ -199,10 +200,9 @@ async def receive_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Mensaje de confirmación
         confirm_text = (
-            f"✅ ¡Perfecto, {first_name}!\n\n"
-            f"*Información registrada:*\n"
-            f"👤 Dueño: {first_name}\n"
-            f"💈 Barbería: {barberia_name}\n"
+            f"🎉 ¡Felicidades, {first_name}! Ya eres el Administrador.\n\n"
+            f"He guardado la información de tu negocio:\n"
+            f"💈 *{barberia_name}*\n"
         )
         
         if phone:
@@ -211,10 +211,10 @@ async def receive_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
             confirm_text += f"📍 Dirección: {context.user_data['setup_address']}\n"
         
         confirm_text += (
-            "\n🎉 ¡Ya eres el administrador de este bot!\n\n"
-            "El siguiente paso es conectar tu Google Calendar.\n"
-            "Escribe /connect para hacerlo.\n\n"
-            "💡 Tip: Usa /info para ver tu información completa."
+            "\n🚀 *¡Tu bot está casi listo!*\n\n"
+            "Solo falta un último detalle: conectarlo con tu cuenta de Google.\n"
+            "Esto permitirá que el bot agiende citas automáticamente en tu calendario.\n\n"
+            "👉 Escribe /connect para vincular tu cuenta ahora."
         )
         
         await update.message.reply_text(confirm_text, parse_mode='Markdown')

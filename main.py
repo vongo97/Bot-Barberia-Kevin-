@@ -30,7 +30,7 @@ def home():
     return {"status": "BarberBot Service Running", "service": "BarberBot"}
 
 @app.get("/auth/callback")
-def auth_callback(state: str, code: str):
+async def auth_callback(state: str, code: str):
     """
     Callback URL que llamará Google.
     state: Trae el telegram_id del usuario que inició el proceso.
@@ -41,6 +41,22 @@ def auth_callback(state: str, code: str):
     success = auth_service.process_callback(code, state)
     
     if success:
+        # Enviar mensaje de confirmación a Telegram
+        try:
+            if bot_app:
+                await bot_app.bot.send_message(
+                    chat_id=state,
+                    text=(
+                        "✅ *¡Conexión Exitosa!*\n\n"
+                        "Tu calendario de Google se ha vinculado correctamente.\n"
+                        "Ahora ya puedes usar el bot para agendar citas y gestionar tu negocio.\n\n"
+                        "💡 *Prueba esto:* Dile al bot \"¿Qué citas tengo para mañana?\""
+                    ),
+                    parse_mode='Markdown'
+                )
+        except Exception as e:
+            logger.error(f"Error enviando mensaje de éxito a Telegram: {e}")
+
         return HTMLResponse("""
         <html>
             <body style="font-family: sans-serif; text-align: center; padding: 50px;">
