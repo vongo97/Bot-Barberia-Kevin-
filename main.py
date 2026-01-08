@@ -60,6 +60,7 @@ async def startup_event():
     """
     logger.info("==================================================")
     logger.info("       🚀 INICIANDO SERVIDOR MAIN.PY NUEVO 🚀      ")
+    print("!!! FORCE PRINT: SERVIDOR INICIANDO - SI NO VES ESTO, NO ES EL CODIGO NUEVO !!!")
     logger.info("==================================================")
     
     # Imprimir todas las rutas registradas para debugging
