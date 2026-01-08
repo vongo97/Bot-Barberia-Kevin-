@@ -86,6 +86,14 @@ async def shutdown_event():
         except Exception as e:
             logger.error(f"Error deteniendo el bot: {e}")
 
+@app.get("/debug-routes")
+def debug_routes():
+    """Lista todas las rutas registradas para debugging."""
+    routes = []
+    for route in app.routes:
+        routes.append(str(route.path))
+    return {"registered_routes": routes}
+
 if __name__ == "__main__":
     # Desarrollo local: usar uvicorn directamente
     port = int(os.getenv("PORT", 8000))
