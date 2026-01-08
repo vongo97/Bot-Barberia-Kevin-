@@ -81,10 +81,25 @@ class AuthService:
             logger.error(f"CRITICAL: No Google Credentials found (Env or File).")
             return None
 
+        # --- Dynamic Redirect URI Logic ---
+        # Calculamos esto AQUÍ, no globalmente, para asegurar que lea el entorno actual
+        env_uri = os.getenv('OAUTH_REDIRECT_URI')
+        render_url = os.getenv('RENDER_EXTERNAL_URL')
+        
+        if env_uri:
+            final_redirect_uri = env_uri
+            logger.info(f"Using OAUTH_REDIRECT_URI from env: {final_redirect_uri}")
+        elif render_url:
+            final_redirect_uri = f"{render_url}/auth/callback"
+            logger.info(f"Auto-detected Render URL: {final_redirect_uri}")
+        else:
+            final_redirect_uri = 'http://localhost:8000/auth/callback'
+            logger.warning(f"No redirect URI found in env, defaulting to localhost: {final_redirect_uri}")
+
         flow = Flow.from_client_config(
             client_config=creds_data,
             scopes=SCOPES,
-            redirect_uri=REDIRECT_URI
+            redirect_uri=final_redirect_uri
         )
     
         # 'state' viaja a Google y vuelve intacto al callback
