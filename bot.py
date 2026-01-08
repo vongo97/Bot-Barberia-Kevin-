@@ -146,19 +146,29 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if phone.lower() in ['omitir', 'skip', 'no', 'n', '']:
         context.user_data['setup_phone'] = None
     else:
-        # Validación básica de teléfono (solo verificar que tenga números)
+        # Validación estricta: solo números, espacios, guiones y el símbolo +
+        import re
+        if not re.match(r'^[\d\s\-\+]+$', phone):
+            await update.message.reply_text(
+                "❌ Eso no parece un número de teléfono válido.\n"
+                "Por favor, escribe solo números o 'omitir' para saltar:"
+            )
+            return WAITING_PHONE
+            
         phone_clean = ''.join(filter(str.isdigit, phone))
         if len(phone_clean) < 7:
             await update.message.reply_text(
-                "❌ El número de teléfono parece inválido.\n"
+                "❌ El número es demasiado corto.\n"
                 "Por favor, escribe un número válido o 'omitir' para saltar:"
             )
             return WAITING_PHONE
         context.user_data['setup_phone'] = phone
     
     # Preguntar por dirección (opcional)
+    status_msg = "✅ *Teléfono registrado!*\n\n" if context.user_data.get('setup_phone') else "✅ *Paso omitido.*\n\n"
+    
     await update.message.reply_text(
-        "✅ *Teléfono registrado!*\n\n" if context.user_data.get('setup_phone') else "✅ *Paso omitido.*\n\n"
+        f"{status_msg}"
         "📝 *Paso 3 de 3*\n"
         "¿Cuál es la dirección física de tu barbería?\n\n"
         "💡 Escribe la dirección exacta (ej: 'Calle 10 #20-30, Ciudad')\n"
