@@ -21,7 +21,14 @@ SCOPES = [
 
 # Configura esto en tu .env o hardcode para pruebas
 # En producción debe ser tu dominio https
-REDIRECT_URI = os.getenv('OAUTH_REDIRECT_URI', 'http://localhost:8000/auth/callback')
+# Prioridad:
+# 1. OAUTH_REDIRECT_URI (Manual explícito)
+# 2. RENDER_EXTERNAL_URL (Automático de Render) + /auth/callback
+# 3. Localhost (Desarrollo)
+RENDER_URL = os.getenv('RENDER_EXTERNAL_URL')
+DEFAULT_URI = f"{RENDER_URL}/auth/callback" if RENDER_URL else 'http://localhost:8000/auth/callback'
+
+REDIRECT_URI = os.getenv('OAUTH_REDIRECT_URI', DEFAULT_URI)
 CLIENT_SECRETS_FILE = 'credentials.json'
 
 def get_credentials_data():
