@@ -357,21 +357,29 @@ async def connect_calendar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     auth_service = AuthService()
-    auth_url = auth_service.get_auth_url(user_id)
-    
-    if auth_url:
-        keyboard = [
-            [InlineKeyboardButton("🔗 Conectar Google Calendar", url=auth_url)]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+    try:
+        auth_url = auth_service.get_auth_url(user_id)
+        
+        if auth_url:
+            keyboard = [
+                [InlineKeyboardButton("🔗 Conectar Google Calendar", url=auth_url)]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await update.message.reply_text(
+                "Para que el bot pueda agendar citas, necesitamos permiso para acceder a tu Google Calendar.\n\nHaz clic en el botón de abajo para autorizar:",
+                reply_markup=reply_markup
+            )
+    except Exception as e:
+        # Aquí capturamos el error detallado de get_credentials_data
+        error_msg = str(e)
+        max_len = 3000 # Evitar mensajes muy largos
+        if len(error_msg) > max_len: error_msg = error_msg[:max_len] + "..."
+        
         await update.message.reply_text(
-            "Para que el bot pueda agendar citas, necesitamos permiso para acceder a tu Google Calendar.\n\nHaz clic en el botón de abajo para autorizar:",
-            reply_markup=reply_markup
-        )
-    else:
-        await update.message.reply_text(
-            "❌ Error: No se encontraron las credenciales de Google OAuth.\n"
-            "Por favor, verifica que GOOGLE_CREDENTIALS_JSON esté configurado o que el archivo credentials.json exista."
+            f"❌ *Error de Autenticación Detallado:*\n\n"
+            f"`{error_msg}`\n\n"
+            "Por favor, revisa tus variables de entorno en Render.",
+            parse_mode='Markdown'
         )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):

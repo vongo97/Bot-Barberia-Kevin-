@@ -26,32 +26,39 @@ CLIENT_SECRETS_FILE = 'credentials.json'
 
 def get_credentials_data():
     """
-    Obtiene las credenciales de Google OAuth desde variable de entorno o archivo.
-    Prioridad: GOOGLE_CREDENTIALS_JSON (env) > credentials.json (archivo)
+    Obtiene las credenciales de Google OAuth.
+    Retorna el dict de credenciales o lanza una Exception con la razón del fallo.
     """
-    # Intentar desde variable de entorno primero (para Render)
+    errors = []
+
+    # 1. Intentar variable de entorno
     env_creds = os.getenv('GOOGLE_CREDENTIALS_JSON')
     if env_creds:
-        logger.info("Found GOOGLE_CREDENTIALS_JSON environment variable.")
         try:
             import json
             return json.loads(env_creds)
         except json.JSONDecodeError as e:
-            logger.error(f"Error parsing GOOGLE_CREDENTIALS_JSON: {e}")
+            msg = f"Error de sintaxis en GOOGLE_CREDENTIALS_JSON: {str(e)}"
+            logger.error(msg)
+            errors.append(msg)
     else:
-        logger.info("GOOGLE_CREDENTIALS_JSON environment variable NOT found.")
-    
-    # Fallback a archivo
+        errors.append("Variable de entorno GOOGLE_CREDENTIALS_JSON no encontrada o vacía.")
+
+    # 2. Intentar archivo local
     if os.path.exists(CLIENT_SECRETS_FILE):
-        logger.info(f"Found local file: {CLIENT_SECRETS_FILE}")
         try:
             import json
             with open(CLIENT_SECRETS_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            logger.error(f"Error reading {CLIENT_SECRETS_FILE}: {e}")
+            msg = f"Error leyendo archivo {CLIENT_SECRETS_FILE}: {str(e)}"
+            logger.error(msg)
+            errors.append(msg)
+    else:
+        errors.append(f"Archivo local {CLIENT_SECRETS_FILE} no encontrado.")
     
-    return None
+    # Si llegamos aquí, falló todo. Lanzar excepción con detalle.
+    raise Exception(" | ".join(errors))
 
 class AuthService:
     def __init__(self):
