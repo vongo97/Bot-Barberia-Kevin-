@@ -58,6 +58,15 @@ async def startup_event():
     """
     Inicia el bot de Telegram cuando arranca el servidor web.
     """
+    logger.info("==================================================")
+    logger.info("       🚀 INICIANDO SERVIDOR MAIN.PY NUEVO 🚀      ")
+    logger.info("==================================================")
+    
+    # Imprimir todas las rutas registradas para debugging
+    logger.info("Rutas registradas en FastAPI:")
+    for route in app.routes:
+        logger.info(f" -> {route.path} [{route.name}]")
+        
     if bot_app:
         logger.info("Iniciando Bot de Telegram...")
         try:
