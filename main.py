@@ -2,20 +2,58 @@ import os
 import uvicorn
 import asyncio
 import logging
-from auth_server import app as fastapi_app
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from bot import create_application
+from services.auth_service import AuthService
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Exportar app para gunicorn (necesario para: gunicorn main:app)
-app = fastapi_app
+# --- FastAPI Setup ---
+app = FastAPI()
+auth_service = AuthService()
 
-# Crear la aplicación del bot
+@app.get("/")
+def home():
+    return {"status": "BarberBot Service Running", "service": "BarberBot"}
+
+@app.get("/auth/callback")
+def auth_callback(state: str, code: str):
+    """
+    Callback URL que llamará Google.
+    state: Trae el telegram_id del usuario que inició el proceso.
+    code: El código de un solo uso para obtener el token.
+    """
+    logger.info(f"Recibido callback para usuario Telegram ID: {state}")
+    
+    success = auth_service.process_callback(code, state)
+    
+    if success:
+        return HTMLResponse("""
+        <html>
+            <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+                <h1 style="color: green;">✅ ¡Conexión Exitosa!</h1>
+                <p>Tu calendario de Google se ha vinculado correctamente con el Bot.</p>
+                <p>Ya puedes cerrar esta ventana y volver a Telegram.</p>
+            </body>
+        </html>
+        """)
+    else:
+        return HTMLResponse("""
+        <html>
+            <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+                <h1 style="color: red;">❌ Error al conectar</h1>
+                <p>Hubo un problema guardando tus credenciales. Por favor intenta de nuevo.</p>
+            </body>
+        </html>
+        """, status_code=500)
+
+# --- Telegram Bot Setup ---
 bot_app = create_application()
 
-@fastapi_app.on_event("startup")
+@app.on_event("startup")
 async def startup_event():
     """
     Inicia el bot de Telegram cuando arranca el servidor web.
@@ -33,7 +71,7 @@ async def startup_event():
         except Exception as e:
             logger.error(f"Error iniciando el bot: {e}")
 
-@fastapi_app.on_event("shutdown")
+@app.on_event("shutdown")
 async def shutdown_event():
     """
     Detiene el bot correctamente al apagar el servidor.
@@ -48,15 +86,12 @@ async def shutdown_event():
         except Exception as e:
             logger.error(f"Error deteniendo el bot: {e}")
 
-# Nota: En producción (Render), gunicorn importa este módulo directamente
-# y ejecuta la app. Los eventos @app.on_event("startup") se ejecutan automáticamente.
-# Este bloque solo se usa para desarrollo local.
 if __name__ == "__main__":
     # Desarrollo local: usar uvicorn directamente
     port = int(os.getenv("PORT", 8000))
     logger.info(f"Iniciando servidor web en puerto {port} (modo desarrollo)...")
     uvicorn.run(
-        fastapi_app,
+        app,
         host="0.0.0.0",
         port=port,
         log_level="info",
