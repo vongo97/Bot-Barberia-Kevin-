@@ -11,8 +11,18 @@ from services.auth_service import AuthService
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+class DebugMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        print(f"!!! DEBUG REQUEST: {request.method} {request.url} !!!")
+        response = await call_next(request)
+        return response
+
 # --- FastAPI Setup ---
 app = FastAPI()
+app.add_middleware(DebugMiddleware)
 auth_service = AuthService()
 
 @app.get("/")
