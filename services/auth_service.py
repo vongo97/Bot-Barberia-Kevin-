@@ -32,20 +32,24 @@ def get_credentials_data():
     # Intentar desde variable de entorno primero (para Render)
     env_creds = os.getenv('GOOGLE_CREDENTIALS_JSON')
     if env_creds:
+        logger.info("Found GOOGLE_CREDENTIALS_JSON environment variable.")
         try:
             import json
             return json.loads(env_creds)
         except json.JSONDecodeError as e:
-            logger.error(f"Error parseando GOOGLE_CREDENTIALS_JSON: {e}")
+            logger.error(f"Error parsing GOOGLE_CREDENTIALS_JSON: {e}")
+    else:
+        logger.info("GOOGLE_CREDENTIALS_JSON environment variable NOT found.")
     
     # Fallback a archivo
     if os.path.exists(CLIENT_SECRETS_FILE):
+        logger.info(f"Found local file: {CLIENT_SECRETS_FILE}")
         try:
             import json
             with open(CLIENT_SECRETS_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            logger.error(f"Error leyendo {CLIENT_SECRETS_FILE}: {e}")
+            logger.error(f"Error reading {CLIENT_SECRETS_FILE}: {e}")
     
     return None
 
@@ -60,45 +64,24 @@ class AuthService:
         """
         creds_data = get_credentials_data()
         if not creds_data:
-            logger.error(f"No se encontró {CLIENT_SECRETS_FILE} ni GOOGLE_CREDENTIALS_JSON")
+            logger.error(f"CRITICAL: No Google Credentials found (Env or File).")
             return None
 
-        # Crear un archivo temporal si viene de variable de entorno
-        import tempfile
-        temp_file = None
-        try:
-            if os.getenv('GOOGLE_CREDENTIALS_JSON'):
-                # Crear archivo temporal para Flow.from_client_secrets_file
-                import json
-                temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-                json.dump(creds_data, temp_file)
-                temp_file.close()
-                secrets_file = temp_file.name
-            else:
-                secrets_file = CLIENT_SECRETS_FILE
-
-            flow = Flow.from_client_secrets_file(
-                secrets_file,
-                scopes=SCOPES,
-                redirect_uri=REDIRECT_URI
-            )
+        flow = Flow.from_client_config(
+            client_config=creds_data,
+            scopes=SCOPES,
+            redirect_uri=REDIRECT_URI
+        )
+    
+        # 'state' viaja a Google y vuelve intacto al callback
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            state=str(telegram_user_id),
+            prompt='consent' # Forzar refresh_token
+        )
         
-            # 'state' viaja a Google y vuelve intacto al callback
-            authorization_url, state = flow.authorization_url(
-                access_type='offline',
-                include_granted_scopes='true',
-                state=str(telegram_user_id),
-                prompt='consent' # Forzar refresh_token
-            )
-            
-            return authorization_url
-        finally:
-            # Limpiar archivo temporal si se creó
-            if temp_file and os.path.exists(temp_file.name):
-                try:
-                    os.unlink(temp_file.name)
-                except:
-                    pass
+        return authorization_url
 
     def process_callback(self, code, state_telegram_id):
         """
