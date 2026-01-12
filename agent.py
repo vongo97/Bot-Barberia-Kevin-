@@ -129,8 +129,8 @@ class BarberAgent:
         self.current_user_id = user_id
         session = self.get_session(user_id)
         
-        # Inject current time context
-        current_context = f"[System: Current Time is {datetime.datetime.now()}]\nUser: {text}"
+        # Inject current time and User ID context
+        current_context = f"[System: Current Time: {datetime.datetime.now()}, User_ID: {user_id}]\nUser: {text}"
         
         try:
             response = session.send_message(current_context)

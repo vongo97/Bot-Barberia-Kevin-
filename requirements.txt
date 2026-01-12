@@ -11,3 +11,4 @@ gunicorn
 cryptography
 python-multipart
 apscheduler
+supabase
